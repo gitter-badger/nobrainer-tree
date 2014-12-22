@@ -1,14 +1,14 @@
 require 'spec_helper'
 
-describe Mongoid::Tree::Ordering do
+describe NoBrainer::Tree::Ordering do
 
   subject { OrderedNode }
 
   it "should store position as an Integer with a default of nil" do
-    f = OrderedNode.fields['position']
+    f = OrderedNode.fields[:position]
     expect(f).not_to be_nil
-    expect(f.options[:type]).to eq(Integer)
-    expect(f.options[:default]).not_to be
+    expect(f[:type]).to eq(Integer)
+    expect(f[:default]).not_to be
   end
 
   describe 'when saved' do
@@ -41,26 +41,27 @@ describe Mongoid::Tree::Ordering do
       other_root = node(:other_root)
       child = node(:child)
       expect(child.position).to eq(0)
-      other_root.children << child
-      child.reload
+      child.parent = other_root
+      child.save
       expect(child.position).to eq(2)
     end
 
     it "should correctly reposition siblings when one of them is removed" do
       node(:other_child).destroy
-      expect(node(:another_child).position).to eq(0)
+      expect(node!(:another_child).position).to eq(0)
     end
 
     it "should correctly reposition siblings when one of them is added to another parent" do
-      node(:root).children << node(:other_child)
-      expect(node(:another_child).position).to eq(0)
+      node(:other_child).parent = node(:root)
+      node(:other_child).save
+      expect(node!(:another_child).position).to eq(0)
     end
 
     it "should correctly reposition siblings when the parent is changed" do
       other_child = node(:other_child)
       other_child.parent = node(:root)
-      other_child.save!
-      expect(node(:another_child).position).to eq(0)
+      other_child.save
+      expect(node!(:another_child).position).to eq(0)
     end
 
     it "should not reposition siblings when it's not yet saved" do
@@ -84,9 +85,9 @@ describe Mongoid::Tree::Ordering do
 
     describe ':move_children_to_parent' do
       it "should set its childen's parent_id to the documents parent_id" do
-        node(:child).move_children_to_parent
-        expect(node(:child)).to be_leaf
-        expect(node(:root).children.to_a).to eq([node(:child), node(:other_child), node(:subchild)])
+        node!(:child).move_children_to_parent
+        expect(node!(:child)).to be_leaf
+        expect(node!(:root).children.to_a).to eq([node(:child), node(:other_child), node(:subchild)])
       end
     end
   end
@@ -175,7 +176,7 @@ describe Mongoid::Tree::Ordering do
                 - leaf
         ENDTREE
 
-        expect(node(:leaf).ancestors.to_a).to eq([node(:root), node(:level_1_b), node(:level_2_a)])
+        expect(node!(:leaf).ancestors.to_a).to eq([node(:root), node(:level_1_b), node(:level_2_a)])
       end
 
       it "should return the ancestors in correct order even after rearranging" do
@@ -185,9 +186,10 @@ describe Mongoid::Tree::Ordering do
               - subchild
         ENDTREE
 
-        child = node(:child); child.parent = nil; child.save!
-        root = node(:root); root.parent = node(:child); root.save!
-        subchild = node(:subchild); subchild.parent = root; subchild.save!
+
+        child = node(:child); child.parent = nil; child.save
+        root = node(:root); root.parent = node(:child); root.save
+        subchild = node(:subchild); subchild.parent = root; subchild.save
 
         expect(subchild.ancestors.to_a).to eq([child, root])
       end
@@ -211,9 +213,9 @@ describe Mongoid::Tree::Ordering do
 
     describe '#move_below' do
       it 'should fix positions within the current list when moving an sibling away from its current parent' do
-        node_to_move = node(:first_child_of_first_root)
-        node_to_move.move_below(node(:first_child_of_second_root))
-        expect(node(:second_child_of_first_root).position).to eq(0)
+        node_to_move = node!(:first_child_of_first_root)
+        node_to_move.move_below(node!(:first_child_of_second_root))
+        expect(node!(:second_child_of_first_root).position).to eq(0)
       end
 
       it 'should work when moving to a different parent' do
@@ -249,9 +251,9 @@ describe Mongoid::Tree::Ordering do
 
     describe '#move_above' do
       it 'should fix positions within the current list when moving an sibling away from its current parent' do
-        node_to_move = node(:first_child_of_first_root)
-        node_to_move.move_above(node(:first_child_of_second_root))
-        expect(node(:second_child_of_first_root).position).to eq(0)
+        node_to_move = node!(:first_child_of_first_root)
+        node_to_move.move_above(node!(:first_child_of_second_root))
+        expect(node!(:second_child_of_first_root).position).to eq(0)
       end
 
       it 'should work when moving to a different parent' do
@@ -327,16 +329,16 @@ describe Mongoid::Tree::Ordering do
 
     describe "#move_up" do
       it "should correctly move nodes up" do
-        node(:third).move_up
-        expect(node(:third_root).children).to eq([node(:first), node(:third), node(:second)])
+        node!(:third).move_up
+        expect(node!(:third_root).children).to eq([node(:first), node(:third), node(:second)])
       end
     end
 
     describe "#move_down" do
       it "should correctly move nodes down" do
-        node(:first).move_down
-        expect(node(:third_root).children).to eq([node(:second), node(:first), node(:third)])
+        node!(:first).move_down
+        expect(node!(:third_root).children).to eq([node(:second), node(:first), node(:third)])
       end
     end
   end # moving nodes around
-end # Mongoid::Tree::Ordering
+end # NoBrainer::Tree::Ordering

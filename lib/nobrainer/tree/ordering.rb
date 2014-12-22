@@ -1,10 +1,10 @@
-module Mongoid
+module NoBrainer
   module Tree
     ##
-    # = Mongoid::Tree::Ordering
+    # = NoBrainer::Tree::Ordering
     #
-    # Mongoid::Tree doesn't order the tree by default. To enable ordering of children
-    # include both Mongoid::Tree and Mongoid::Tree::Ordering into your document.
+    # NoBrainer::Tree doesn't order the tree by default. To enable ordering of children
+    # include both NoBrainer::Tree and NoBrainer::Tree::Ordering into your document.
     #
     # == Utility methods
     #
@@ -35,9 +35,9 @@ module Mongoid
       included do
         field :position, :type => Integer
 
-        default_scope ->{ asc(:position) }
+        default_scope -> { order_by(:position => :asc) }
 
-        before_save :assign_default_position, :if => :assign_default_position?
+        before_save :assign_default_position,    :if => :assign_default_position?
         before_save :reposition_former_siblings, :if => :sibling_reposition_required?
         after_destroy :move_lower_siblings_up
       end
@@ -45,16 +45,16 @@ module Mongoid
       ##
       # Returns a chainable criteria for this document's ancestors
       #
-      # @return [Mongoid::Criteria] Mongoid criteria to retrieve the document's ancestors
+      # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's ancestors
       def ancestors
-        base_class.unscoped { super }
+        base_class.unscoped.without_index.where(:id.in => self.parent_ids).order_by(:depth => :asc)
       end
 
       ##
       # Returns siblings below the current document.
       # Siblings with a position greater than this document's position.
       #
-      # @return [Mongoid::Criteria] Mongoid criteria to retrieve the document's lower siblings
+      # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's lower siblings
       def lower_siblings
         self.siblings.where(:position.gt => self.position)
       end
@@ -63,7 +63,7 @@ module Mongoid
       # Returns siblings above the current document.
       # Siblings with a position lower than this document's position.
       #
-      # @return [Mongoid::Criteria] Mongoid criteria to retrieve the document's higher siblings
+      # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's higher siblings
       def higher_siblings
         self.siblings.where(:position.lt => self.position)
       end
@@ -72,7 +72,7 @@ module Mongoid
       # Returns siblings between the current document and the other document
       # Siblings with a position between this document's position and the other document's position.
       #
-      # @return [Mongoid::Criteria] Mongoid criteria to retrieve the documents between this and the other document
+      # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the documents between this and the other document
       def siblings_between(other)
         range = [self.position, other.position].sort
         self.siblings.where(:position.gt => range.first, :position.lt => range.last)
@@ -81,7 +81,7 @@ module Mongoid
       ##
       # Returns the lowest sibling (could be self)
       #
-      # @return [Mongoid::Document] The lowest sibling
+      # @return [NoBrainer::Document] The lowest sibling
       def last_sibling_in_list
         siblings_and_self.last
       end
@@ -89,7 +89,7 @@ module Mongoid
       ##
       # Returns the highest sibling (could be self)
       #
-      # @return [Mongoid::Document] The highest sibling
+      # @return [NoBrainer::Document] The highest sibling
       def first_sibling_in_list
         siblings_and_self.first
       end
@@ -149,7 +149,7 @@ module Mongoid
       #
       # This method changes the node's parent if nescessary.
       #
-      # @param [Mongoid::Tree] other document to move this document above
+      # @param [NoBrainer::Tree] other document to move this document above
       #
       # @return [undefined]
       def move_above(other)
@@ -157,15 +157,15 @@ module Mongoid
 
         if position > other.position
           new_position = other.position
-          self.siblings_between(other).inc(:position => 1)
-          other.inc(:position => 1)
+          self.siblings_between(other).increment_all(:position => 1)
+          other.increment(:position => 1)
         else
           new_position = other.position - 1
-          self.siblings_between(other).inc(:position => -1)
+          self.siblings_between(other).increment_all(:position => -1)
         end
 
         self.position = new_position
-        save!
+        save
       end
 
       ##
@@ -173,7 +173,7 @@ module Mongoid
       #
       # This method changes the node's parent if nescessary.
       #
-      # @param [Mongoid::Tree] other document to move this document below
+      # @param [NoBrainer::Tree] other document to move this document below
       #
       # @return [undefined]
       def move_below(other)
@@ -181,39 +181,50 @@ module Mongoid
 
         if position > other.position
           new_position = other.position + 1
-          self.siblings_between(other).inc(:position => 1)
+          self.siblings_between(other).increment_all(:position => 1)
         else
           new_position = other.position
-          self.siblings_between(other).inc(:position => -1)
-          other.inc(:position => -1)
+          self.siblings_between(other).increment_all(:position => -1)
+          other.increment(:position => -1)
         end
 
         self.position = new_position
-        save!
+        save
       end
 
-    private
+      def increment(increments)
+        self.queue_atomic do
+          increments.symbolize_keys.each{ |key, value | self[key] += value }
+        end
+      end
+
+      def increment!(increments)
+        self.increment(increments)
+        self.save
+      end
+
+      private
 
       def switch_with_sibling_at_offset(offset)
-        siblings.where(:position => self.position + offset).first.inc(:position => -offset)
-        inc(:position => offset)
+        siblings.where(:position => self.position + offset).first.increment(:position => -offset)
+        increment(:position => offset)
       end
 
       def ensure_to_be_sibling_of(other)
         return if sibling_of?(other)
         self.parent_id = other.parent_id
-        save!
+        save
       end
 
       def move_lower_siblings_up
-        lower_siblings.inc(:position => -1)
+        lower_siblings.increment_all(:position => -1)
       end
 
       def reposition_former_siblings
-        former_siblings = base_class.where(:parent_id => attribute_was('parent_id')).
-                                     and(:position.gt => (attribute_was('position') || 0)).
-                                     excludes(:id => self.id)
-        former_siblings.inc(:position => -1)
+        former_siblings = base_class.where(:parent_id => self.parent_id_was).
+                                     where(:position.gt => (self.position_was || 0)).
+                                     where(:id.ne => self.id)
+        former_siblings.increment_all(:position => -1)
       end
 
       def sibling_reposition_required?
@@ -221,16 +232,13 @@ module Mongoid
       end
 
       def assign_default_position
-        self.position = if self.siblings.where(:position.ne => nil).any?
-          self.last_sibling_in_list.position + 1
-        else
-          0
-        end
+        self.position = self.last_sibling_in_list.position + 1 rescue 0
       end
 
       def assign_default_position?
         self.position.nil? || self.parent_id_changed?
       end
+
     end
   end
 end
