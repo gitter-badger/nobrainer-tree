@@ -81,8 +81,8 @@ module NoBrainer
   module Tree
     extend ActiveSupport::Concern
 
-    autoload :Ordering,  'no_brainer/tree/ordering'
-    autoload :Traversal, 'no_brainer/tree/traversal'
+    autoload :Ordering,  'nobrainer/tree/ordering'
+    autoload :Traversal, 'nobrainer/tree/traversal'
 
     included do
       has_many :children, :class_name => self.name, :foreign_key => :parent_id
