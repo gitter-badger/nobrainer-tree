@@ -1,7 +1,7 @@
 class Node
-  include Mongoid::Document
-  include Mongoid::Tree
-  include Mongoid::Tree::Traversal
+  include NoBrainer::Document
+  include NoBrainer::Tree
+  include NoBrainer::Tree::Traversal
 
   field :name
 end
@@ -12,21 +12,23 @@ end
 # Adding ordering on subclasses currently doesn't work as expected.
 #
 # class OrderedNode < Node
-#   include Mongoid::Tree::Ordering
+#   include NoBrainer::Tree::Ordering
 # end
 class OrderedNode
-  include Mongoid::Document
-  include Mongoid::Tree
-  include Mongoid::Tree::Traversal
-  include Mongoid::Tree::Ordering
+  include NoBrainer::Document
+  include NoBrainer::Tree
+  include NoBrainer::Tree::Traversal
+  include NoBrainer::Tree::Ordering
 
   field :name
 end
 
-class NodeWithEmbeddedDocument < Node
-  embeds_one :embedded_document, :cascade_callbacks => true
-end
+NoBrainer.sync_indexes
 
-class EmbeddedDocument
-  include Mongoid::Document
-end
+# class NodeWithEmbeddedDocument < Node
+#   embeds_one :embedded_document, :cascade_callbacks => true
+# end
+#
+# class EmbeddedDocument
+#   include Mongoid::Document
+# end
