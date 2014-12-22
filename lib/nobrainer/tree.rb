@@ -1,18 +1,18 @@
 require 'active_support/concern'
 
-module Mongoid
+module NoBrainer
   ##
-  # = Mongoid::Tree
+  # = NoBrainer::Tree
   #
-  # This module extends any Mongoid document with tree functionality.
+  # This module extends any NoBrainer document with tree functionality.
   #
   # == Usage
   #
-  # Simply include the module in any Mongoid document:
+  # Simply include the module in any NoBrainer document:
   #
   #   class Node
-  #     include Mongoid::Document
-  #     include Mongoid::Tree
+  #     include NoBrainer::Document
+  #     include NoBrainer::Tree
   #   end
   #
   # === Using the tree structure
@@ -32,7 +32,7 @@ module Mongoid
   #
   # === Destroying
   #
-  # Mongoid::Tree does not handle destroying of nodes by default. However it provides
+  # NoBrainer::Tree does not handle destroying of nodes by default. However it provides
   # several strategies that help you to deal with children of deleted documents. You can
   # simply add them as <tt>before_destroy</tt> callbacks.
   #
@@ -46,15 +46,15 @@ module Mongoid
   # Example:
   #
   #   class Node
-  #     include Mongoid::Document
-  #     include Mongoid::Tree
+  #     include NoBrainer::Document
+  #     include NoBrainer::Tree
   #
   #     before_destroy :nullify_children
   #   end
   #
   # === Callbacks
   #
-  # Mongoid::Tree offers callbacks for its rearranging process. This enables you to
+  # NoBrainer::Tree offers callbacks for its rearranging process. This enables you to
   # rebuild certain fields when the document was moved in the tree. Rearranging happens
   # before the document is validated. This gives you a chance to validate your additional
   # changes done in your callbacks. See ActiveModel::Callbacks and ActiveSupport::Callbacks
@@ -63,8 +63,8 @@ module Mongoid
   # Example:
   #
   #   class Page
-  #     include Mongoid::Document
-  #     include Mongoid::Tree
+  #     include NoBrainer::Document
+  #     include NoBrainer::Tree
   #
   #     after_rearrange :rebuild_path
   #
@@ -81,19 +81,20 @@ module Mongoid
   module Tree
     extend ActiveSupport::Concern
 
-    autoload :Ordering, 'mongoid/tree/ordering'
-    autoload :Traversal, 'mongoid/tree/traversal'
+    autoload :Ordering,  'no_brainer/tree/ordering'
+    autoload :Traversal, 'no_brainer/tree/traversal'
 
     included do
-      has_many :children, :class_name => self.name, :foreign_key => :parent_id, :inverse_of => :parent, :validate => false
+      has_many :children, :class_name => self.name, :foreign_key => :parent_id
 
-      belongs_to :parent, :class_name => self.name, :inverse_of => :children, :index => true, :validate => false
+      # TODO: Use index when nil is allowed in index queries
+      belongs_to :parent, :class_name => self.name
 
       field :parent_ids, :type => Array, :default => []
-      index :parent_ids => 1
+      index :parent_ids, :multi => true
 
       field :depth, :type => Integer
-      index :depth => 1
+      index :depth
 
       set_callback :save, :after, :rearrange_children, :if => :rearrange_children?
       set_callback :validation, :before do
@@ -109,7 +110,7 @@ module Mongoid
 
     ##
     # This module implements class methods that will be available
-    # on the document that includes Mongoid::Tree
+    # on the document that includes NoBrainer::Tree
     module ClassMethods
 
       ##
@@ -118,7 +119,7 @@ module Mongoid
       # @example
       #   Node.root
       #
-      # @return [Mongoid::Document] The first root document
+      # @return [NoBrainer::Document] The first root document
       def root
         roots.first
       end
@@ -129,7 +130,7 @@ module Mongoid
       # @example
       #   Node.roots
       #
-      # @return [Mongoid::Criteria] Mongoid criteria to retrieve all root documents
+      # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve all root documents
       def roots
         where(:parent_id => nil)
       end
@@ -140,9 +141,9 @@ module Mongoid
       # @example
       #   Node.leaves
       #
-      # @return [Mongoid::Criteria] Mongoid criteria to retrieve all leave nodes
+      # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve all leave nodes
       def leaves
-        where(:_id.nin => only(:parent_id).collect(&:parent_id))
+        where(:id.nin => pluck(:id, :_type, :parent_id).collect(&:parent_id).compact)
       end
 
     end
@@ -155,8 +156,8 @@ module Mongoid
     #
     #   @example
     #     class Node
-    #       include Mongoid::Document
-    #       include Mongoid::Tree
+    #       include NoBrainer::Document
+    #       include NoBrainer::Tree
     #
     #       before_rearrage :do_something
     #
@@ -179,8 +180,8 @@ module Mongoid
     #
     #   @example
     #     class Node
-    #       include Mongoid::Document
-    #       include Mongoid::Tree
+    #       include NoBrainer::Document
+    #       include NoBrainer::Tree
     #
     #       after_rearrange :do_something
     #
@@ -199,31 +200,31 @@ module Mongoid
     # @!method children
     #   Returns a list of the document's children. It's a <tt>references_many</tt> association.
     #
-    #   @note Generated by Mongoid
+    #   @note Generated by NoBrainer
     #
-    #   @return [Mongoid::Criteria] Mongoid criteria to retrieve the document's children
+    #   @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's children
 
     ##
     # @!method parent
     #   Returns the document's parent (unless it's a root document).  It's a <tt>referenced_in</tt> association.
     #
-    #   @note Generated by Mongoid
+    #   @note Generated by NoBrainer
     #
-    #   @return [Mongoid::Document] The document's parent document
+    #   @return [NoBrainer::Document] The document's parent document
 
     ##
     # @!method parent=(document)
     #   Sets this documents parent document.
     #
-    #   @note Generated by Mongoid
+    #   @note Generated by NoBrainer
     #
-    #   @param [Mongoid::Tree] document
+    #   @param [NoBrainer::Tree] document
 
     ##
     # @!method parent_ids
     #   Returns a list of the document's parent_ids, starting with the root node.
     #
-    #   @note Generated by Mongoid
+    #   @note Generated by NoBrainer
     #
     #   @return [Array<BSON::ObjectId>] The ids of the document's ancestors
 
@@ -236,7 +237,7 @@ module Mongoid
     #
     # @return [Fixnum] Depth of this document
     def depth
-      super || parent_ids.count
+      super || self.parent_ids.count
     end
 
     ##
@@ -244,7 +245,7 @@ module Mongoid
     #
     # @return [Boolean] Whether the document is a root node
     def root?
-      parent_id.nil?
+      self.parent_id.nil?
     end
 
     ##
@@ -252,7 +253,7 @@ module Mongoid
     #
     # @return [Boolean] Whether the document is a leaf node
     def leaf?
-      children.empty?
+      self.children.empty?
     end
 
     ##
@@ -263,10 +264,10 @@ module Mongoid
     #   node = Node.find(...)
     #   node.root
     #
-    # @return [Mongoid::Document] The documents root node
+    # @return [NoBrainer::Document] The documents root node
     def root
-      if parent_ids.present?
-        base_class.find(parent_ids.first)
+      if self.parent_ids.present?
+        base_class.find(self.parent_ids.first)
       else
         self.root? ? self : self.parent.root
       end
@@ -275,15 +276,15 @@ module Mongoid
     ##
     # Returns a chainable criteria for this document's ancestors
     #
-    # @return [Mongoid::Criteria] Mongoid criteria to retrieve the documents ancestors
+    # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the documents ancestors
     def ancestors
-      base_class.where(:_id.in => parent_ids).order(:depth => :asc)
+      base_class.without_index.where(:id.in => self.parent_ids).order_by(:depth => :asc)
     end
 
     ##
     # Returns an array of this document's ancestors and itself
     #
-    # @return [Array<Mongoid::Document>] Array of the document's ancestors and itself
+    # @return [Array<NoBrainer::Document>] Array of the document's ancestors and itself
     def ancestors_and_self
       ancestors + [self]
     end
@@ -291,7 +292,7 @@ module Mongoid
     ##
     # Is this document an ancestor of the other document?
     #
-    # @param [Mongoid::Tree] other document to check against
+    # @param [NoBrainer::Tree] other document to check against
     #
     # @return [Boolean] The document is an ancestor of the other document
     def ancestor_of?(other)
@@ -301,15 +302,15 @@ module Mongoid
     ##
     # Returns a chainable criteria for this document's descendants
     #
-    # @return [Mongoid::Criteria] Mongoid criteria to retrieve the document's descendants
+    # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's descendants
     def descendants
-      base_class.where(:parent_ids => self.id)
+      base_class.where(:parent_ids.any => self.id)
     end
 
     ##
     # Returns and array of this document and it's descendants
     #
-    # @return [Array<Mongoid::Document>] Array of the document itself and it's descendants
+    # @return [Array<NoBrainer::Document>] Array of the document itself and it's descendants
     def descendants_and_self
       [self] + descendants
     end
@@ -317,7 +318,7 @@ module Mongoid
     ##
     # Is this document a descendant of the other document?
     #
-    # @param [Mongoid::Tree] other document to check against
+    # @param [NoBrainer::Tree] other document to check against
     #
     # @return [Boolean] The document is a descendant of the other document
     def descendant_of?(other)
@@ -327,15 +328,15 @@ module Mongoid
     ##
     # Returns this document's siblings
     #
-    # @return [Mongoid::Criteria] Mongoid criteria to retrieve the document's siblings
+    # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's siblings
     def siblings
-      siblings_and_self.excludes(:id => self.id)
+      siblings_and_self.where(:id.ne => self.id)
     end
 
     ##
     # Returns this document's siblings and itself
     #
-    # @return [Mongoid::Criteria] Mongoid criteria to retrieve the document's siblings and itself
+    # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's siblings and itself
     def siblings_and_self
       base_class.where(:parent_id => self.parent_id)
     end
@@ -343,7 +344,7 @@ module Mongoid
     ##
     # Is this document a sibling of the other document?
     #
-    # @param [Mongoid::Tree] other document to check against
+    # @param [NoBrainer::Tree] other document to check against
     #
     # @return [Boolean] The document is a sibling of the other document
     def sibling_of?(other)
@@ -353,9 +354,9 @@ module Mongoid
     ##
     # Returns all leaves of this document (be careful, currently involves two queries)
     #
-    # @return [Mongoid::Criteria] Mongoid criteria to retrieve the document's leaves
+    # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's leaves
     def leaves
-      base_class.where(:_id.nin => base_class.only(:parent_id).collect(&:parent_id)).and(:parent_ids => self.id)
+      base_class.where(:id.nin => base_class.pluck(:id, :_type, :parent_id).collect(&:parent_id).compact, :parent_ids.any => self.id)
     end
 
     ##
@@ -400,8 +401,9 @@ module Mongoid
     # Deletes all descendants using the database (doesn't invoke callbacks)
     #
     # @return [undefined]
+    #
     def delete_descendants
-      base_class.delete_all(:conditions => { :parent_ids => self.id })
+      self.descendants.delete_all
     end
 
     ##
@@ -412,7 +414,7 @@ module Mongoid
       children.destroy_all
     end
 
-  private
+    private
 
     ##
     # Updates the parent_ids and marks the children for
@@ -421,11 +423,7 @@ module Mongoid
     # @private
     # @return [undefined]
     def rearrange
-      if self.parent_id
-        self.parent_ids = parent.parent_ids + [self.parent_id]
-      else
-        self.parent_ids = []
-      end
+      self.parent_ids = (parent.parent_ids + [self.parent_id]) rescue []
 
       self.depth = parent_ids.size
 

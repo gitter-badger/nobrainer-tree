@@ -1,61 +1,64 @@
 require 'spec_helper'
 
-describe Mongoid::Tree do
+describe NoBrainer::Tree do
 
   subject { Node }
 
   it "should reference many children as inverse of parent with index" do
-    a = Node.reflect_on_association(:children)
+    a = Node.association_metadata[:children]
     expect(a).to be
-    expect(a.macro).to eq(:has_many)
-    expect(a.class_name).to eq('Node')
-    expect(a.foreign_key).to eq('parent_id')
-    expect(Node.index_specification(:parent_id => 1)).to be
+    expect(a.association_model).to eq(NoBrainer::Document::Association::HasMany)
+    expect(a.options[:class_name]).to eq('Node')
+    expect(a.options[:foreign_key]).to eq(:parent_id)
+    # TODO: Use index when nil is allowed in index queries
+    #expect(Node.fields[:parent_id][:index]).to be
   end
 
   it "should be referenced in one parent as inverse of children" do
-    a = Node.reflect_on_association(:parent)
+    a = Node.association_metadata[:parent]
     expect(a).to be
-    expect(a.macro).to eq(:belongs_to)
-    expect(a.class_name).to eq('Node')
-    expect(a.inverse_of).to eq(:children)
+    expect(a.association_model).to eq(NoBrainer::Document::Association::BelongsTo)
+    expect(a.options[:class_name]).to eq('Node')
   end
 
   it "should store parent_ids as Array with [] as default with index" do
-    f = Node.fields['parent_ids']
+    f = Node.fields[:parent_ids]
+    i = Node.indexes[:parent_ids]
     expect(f).to be
-    expect(f.options[:type]).to eq(Array)
-    expect(f.options[:default]).to eq([])
-    expect(Node.index_specification(:parent_ids => 1)).to be
+    expect(f[:type]).to eq(Array)
+    expect(f[:default]).to eq([])
+    expect(i).to be
+    expect(i[:multi]).to eq(true)
   end
 
   it "should store the depth as Integer with index" do
-    f = Node.fields['depth']
+    f = Node.fields[:depth]
+    i = Node.indexes[:depth]
     expect(f).to be
-    expect(f.options[:type]).to eq(Integer)
-    expect(Node.index_specification(:depth => 1)).to be
+    expect(f[:type]).to eq(Integer)
+    expect(i).to be
   end
 
-  describe 'when new' do
-    it "should not require a saved parent when adding children" do
-      root = Node.new(:name => 'root'); child = Node.new(:name => 'child')
-      expect { root.children << child; root.save! }.to_not raise_error
-      expect(child).to be_persisted
-    end
-
-    it "should not be saved when parent is not saved" do
-      root = Node.new(:name => 'root'); child = Node.new(:name => 'child')
-      expect(child).not_to receive(:save)
-      root.children << child
-    end
-
-    it "should save its unsaved children" do
-      root = Node.new(:name => 'root'); child = Node.new(:name => 'child')
-      root.children << child
-      expect(child).to receive(:save)
-      root.save
-    end
-  end
+  # describe 'when new' do
+  #   it "should not require a saved parent when adding children" do
+  #     root = Node.new(:name => 'root'); child = Node.new(:name => 'child')
+  #     expect { root.children << child; root.save! }.to_not raise_error
+  #     expect(child).to be_persisted
+  #   end
+  #
+  #   it "should not be saved when parent is not saved" do
+  #     root = Node.new(:name => 'root'); child = Node.new(:name => 'child')
+  #     expect(child).not_to receive(:save)
+  #     root.children << child
+  #   end
+  #
+  #   it "should save its unsaved children" do
+  #     root = Node.new(:name => 'root'); child = Node.new(:name => 'child')
+  #     root.children << child
+  #     expect(child).to receive(:save)
+  #     root.save
+  #   end
+  # end
 
   describe 'when saved' do
 
@@ -70,12 +73,12 @@ describe Mongoid::Tree do
       ENDTREE
     end
 
-    it "should set the child's parent_id when added to parent's children" do
-      root = Node.create; child = Node.create
-      root.children << child
-      expect(child.parent).to eq(root)
-      expect(child.parent_id).to eq(root.id)
-    end
+    # it "should set the child's parent_id when added to parent's children" do
+    #   root = Node.create; child = Node.create
+    #   root.children << child
+    #   expect(child.parent).to eq(root)
+    #   expect(child.parent_id).to eq(root.id)
+    # end
 
     it "should set the child's parent_id parent is set on child" do
       root = Node.create; child = Node.create
@@ -86,29 +89,29 @@ describe Mongoid::Tree do
 
     it "should rebuild its parent_ids" do
       root = Node.create; child = Node.create
-      root.children << child
+      child.parent = root; child.save
       expect(child.parent_ids).to eq([root.id])
     end
 
     it "should rebuild its children's parent_ids when its own parent_ids changed" do
-      other_root = node(:other_root); child = node(:child); subchild = node(:subchild);
-      other_root.children << child
+      other_root = node!(:other_root); child = node!(:child); subchild = node!(:subchild);
+      child.parent = other_root; child.save
       subchild.reload # To get the updated version
       expect(subchild.parent_ids).to eq([other_root.id, child.id])
     end
 
     it "should correctly rebuild its descendants' parent_ids when moved into an other subtree" do
-      subchild = node(:subchild); subsubchild = node(:subsubchild); other_child = node(:other_child)
-      other_child.children << subchild
+      subchild = node!(:subchild); subsubchild = node!(:subsubchild); other_child = node!(:other_child)
+      subchild.parent = other_child; subchild.save
       subsubchild.reload
       expect(subsubchild.parent_ids).to eq([node(:other_root).id, other_child.id, subchild.id])
     end
 
     it "should rebuild its children's parent_ids when its own parent_id is removed" do
-      c = node(:child)
+      c = node!(:child)
       c.parent_id = nil
       c.save
-      expect(node(:subchild).parent_ids).to eq([node(:child).id])
+      expect(node!(:subchild).parent_ids).to eq([node(:child).id])
     end
 
     it "should not rebuild its children's parent_ids when it's not required" do
@@ -126,7 +129,7 @@ describe Mongoid::Tree do
 
     it "should save its children when added" do
       new_child = Node.new(:name => 'new_child')
-      node(:root).children << new_child
+      new_child.parent = node!(:root); new_child.save
       expect(new_child).to be_persisted
     end
   end
@@ -136,16 +139,16 @@ describe Mongoid::Tree do
     before(:each) do
       setup_tree <<-ENDTREE
         - root:
-           - child:
-             - subchild
-           - other_child
+          - child:
+            - subchild
+          - other_child
         - other_root
       ENDTREE
     end
 
     it "should allow to store any subclass within the tree" do
       subclassed = SubclassedNode.create!(:name => 'subclassed_subchild')
-      node(:child).children << subclassed
+      subclassed.parent = node!(:child)
       expect(subclassed.root).to eq(node(:root))
     end
 
@@ -156,49 +159,49 @@ describe Mongoid::Tree do
     before(:each) do
       setup_tree <<-ENDTREE
         - root:
-           - child:
-             - subchild
-           - other_child
+          - child:
+            - subchild
+            - other_child
         - other_root
       ENDTREE
     end
 
     describe ':nullify_children' do
       it "should set its children's parent_id to null" do
-        node(:root).nullify_children
-        expect(node(:child)).to be_root
-        expect(node(:subchild).reload).not_to be_descendant_of node(:root)
+        node!(:root).nullify_children
+        expect(node!(:child)).to be_root
+        expect(node!(:subchild)).not_to be_descendant_of node(:root)
       end
     end
 
     describe ':move_children_to_parent' do
       it "should set its childen's parent_id to the documents parent_id" do
-        node(:child).move_children_to_parent
-        expect(node(:child)).to be_leaf
-        expect(node(:root).children.to_a).to match_array([node(:child), node(:other_child), node(:subchild)])
+        node!(:child).move_children_to_parent
+        expect(node!(:child)).to be_leaf
+        expect(node!(:root).children.to_a).to match_array([node(:child), node(:other_child), node(:subchild)])
       end
 
       it "should be able to handle a missing parent" do
-        node(:root).delete
-        expect { node(:child).move_children_to_parent }.to_not raise_error
+        node!(:root).delete
+        expect { node!(:child).move_children_to_parent }.to_not raise_error
       end
     end
 
     describe ':destroy_children' do
       it "should destroy all children" do
-        root = node(:root)
+        root = node!(:root)
         expect(root.children).to receive(:destroy_all)
         root.destroy_children
       end
     end
 
-    describe ':delete_descendants' do
-      it "should delete all descendants" do
-        root = node(:root)
-        expect(Node).to receive(:delete_all).with(:conditions => { :parent_ids => root.id })
-        root.delete_descendants
-      end
-    end
+    # describe ':delete_descendants' do
+    #   it "should delete all descendants" do
+    #     root = node!(:root)
+    #     expect(Node).to receive(:delete_all).with(:conditions => { :parent_ids => root.id })
+    #     root.delete_descendants
+    #   end
+    # end
 
   end
 
@@ -207,9 +210,9 @@ describe Mongoid::Tree do
     before(:each) do
       setup_tree <<-ENDTREE
         - root:
-           - child:
-             - subchild
-           - other_child
+          - child:
+            - subchild
+          - other_child
         - other_root
       ENDTREE
     end
@@ -250,22 +253,22 @@ describe Mongoid::Tree do
       end
 
       it "should return false for non-leaf documents" do
-        expect(node(:child)).not_to be_leaf
-        expect(node(:root)).not_to be_leaf
+        expect(node!(:child)).not_to be_leaf
+        expect(node!(:root)).not_to be_leaf
       end
     end
 
     describe '#depth' do
       it "should return the depth of this document" do
-        expect(node(:root).depth).to eq(0)
-        expect(node(:child).depth).to eq(1)
-        expect(node(:subchild).depth).to eq(2)
+        expect(node!(:root).depth).to eq(0)
+        expect(node!(:child).depth).to eq(1)
+        expect(node!(:subchild).depth).to eq(2)
       end
 
       it "should be updated when the nodes ancestors change" do
-        node(:child).update_attributes(:parent => nil)
-        expect(node(:child).depth).to eq(0)
-        expect(node(:subchild).depth).to eq(1)
+        node!(:child).update_attributes(:parent => nil)
+        expect(node!(:child).depth).to eq(0)
+        expect(node!(:subchild).depth).to eq(1)
       end
     end
 
@@ -308,7 +311,7 @@ describe Mongoid::Tree do
         end
 
         it 'should return nothing when there are no ancestors' do
-          root = Node.new(:name => 'root')
+          root = Node.create(:name => 'root')
           expect(root.ancestors).to be_empty
         end
 
@@ -320,12 +323,12 @@ describe Mongoid::Tree do
                   - subsubchild
           ENDTREE
 
-          filtered_ancestors = node(:subsubchild).ancestors.or(
-              { :name => 'child' },
-              { :name => 'subchild' }
-          )
-
-          expect(filtered_ancestors.to_a).to eq([node(:child), node(:subchild)])
+          # filtered_ancestors = node(:subsubchild).ancestors.or(
+          #   { :name => 'child' },
+          #   { :name => 'subchild' }
+          # )
+          #
+          # expect(filtered_ancestors.to_a).to eq([node(:child), node(:subchild)])
         end
       end
 
@@ -381,7 +384,7 @@ describe Mongoid::Tree do
 
       describe '#siblings_and_self' do
         it "should return the documents siblings and itself" do
-          expect(node(:child).siblings_and_self).to be_kind_of(Mongoid::Criteria)
+          expect(node(:child).siblings_and_self).to be_kind_of(NoBrainer::Criteria)
           expect(node(:child).siblings_and_self.to_a).to eq([node(:child), node(:other_child)])
         end
       end
@@ -443,15 +446,15 @@ describe Mongoid::Tree do
 
     end
 
-    describe 'cascading to embedded documents' do
-
-      it 'should not raise a NoMethodError' do
-        node = NodeWithEmbeddedDocument.new
-        document = node.build_embedded_document
-        expect { node.save }.to_not raise_error
-      end
-
-    end
+    # describe 'cascading to embedded documents' do
+    #
+    #   it 'should not raise a NoMethodError' do
+    #     node = NodeWithEmbeddedDocument.new
+    #     document = node.build_embedded_document
+    #     expect { node.save }.to_not raise_error
+    #   end
+    #
+    # end
 
   end
 end
