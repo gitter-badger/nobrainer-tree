@@ -1,9 +1,9 @@
-module Mongoid
+module NoBrainer
   module Tree
     ##
-    # = Mongoid::Tree::Traversal
+    # = NoBrainer::Tree::Traversal
     #
-    # Mongoid::Tree::Traversal provides a #traverse method to walk through the tree.
+    # NoBrainer::Tree::Traversal provides a #traverse method to walk through the tree.
     # It supports these traversal methods:
     #
     # * depth_first
@@ -50,14 +50,14 @@ module Mongoid
 
 
       ##
-      # This module implements class methods that will be available 
-      # on the document that includes Mongoid::Tree::Traversal
+      # This module implements class methods that will be available
+      # on the document that includes NoBrainer::Tree::Traversal
       module ClassMethods
         ##
         # Traverses the entire tree, one root at a time, using the given traversal
         # method (Default is :depth_first).
-        # 
-        # See Mongoid::Tree::Traversal for available traversal methods.
+        #
+        # See NoBrainer::Tree::Traversal for available traversal methods.
         #
         # @example
         #
@@ -83,7 +83,7 @@ module Mongoid
       # Traverses the tree using the given traversal method (Default is :depth_first)
       # and passes each document node to the block.
       #
-      # See Mongoid::Tree::Traversal for available traversal methods.
+      # See NoBrainer::Tree::Traversal for available traversal methods.
       #
       # @example
       #
