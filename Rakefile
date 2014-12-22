@@ -1,7 +1,7 @@
 require 'rspec/core/rake_task'
 require 'yard'
 
-spec = Gem::Specification.load("mongoid-tree.gemspec")
+spec = Gem::Specification.load("nobrainer-tree.gemspec")
 
 RSpec::Core::RakeTask.new(:spec)
 
