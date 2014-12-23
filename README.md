@@ -1,43 +1,38 @@
-# mongoid-tree [![Build Status](https://secure.travis-ci.org/benedikt/mongoid-tree.png?branch=master)](http://travis-ci.org/benedikt/mongoid-tree) [![Dependency Status](https://gemnasium.com/benedikt/mongoid-tree.png)](http://gemnasium.com/benedikt/mongoid-tree)
+# nobrainer-tree [![Build Status](https://travis-ci.org/secondimpression/nobrainer-tree.svg?branch=nobrainer) [![Dependency Status](https://gemnasium.com/secondimpression/nobrainer-tree.png)](https://gemnasium.com/secondimpression/nobrainer-tree)
 
-A tree structure for Mongoid documents using the materialized path pattern
+A tree structure for NoBrainer documents using the materialized path pattern
 
 ## Requirements
 
-* mongoid (~> 4.0)
-
-For a mongoid 3.x compatible version, please use mongoid-tree 1.0.x,
-for a mongoid 2.x compatible version, please use mongoid-tree 0.7.x.
+* nobrainer (~> 0.20.0)
 
 
 ## Install
 
-To install mongoid_tree, simply add it to your Gemfile:
+To install nobrainer-tree, simply add it to your Gemfile:
 
-    gem 'mongoid-tree', :require => 'mongoid/tree'
+    gem 'nobrainer-tree', :require => 'nobrainer/tree'
 
-In order to get the latest development version of mongoid-tree:
+In order to get the latest development version of nobrainer-tree:
 
-    gem 'mongoid-tree', :git => 'git://github.com/benedikt/mongoid-tree'
+    gem 'nobrainer-tree', :git => 'git://github.com/secondimpression/nobrainer-tree'
 
-You might want to add `:require => nil` option and explicitly `require 'mongoid/tree'` where needed and finally run
+You might want to add `:require => nil` option and explicitly `require 'nobrainer/tree'` where needed and finally run
 
     bundle install
 
-### Upgrade from mongoid-tree 1.x
-
-To fix issues with the ordering of ancestors, mongoid-tree 2.0 introduces a new `depth` field to the documents that include the `Mongoid::Tree` module. In case your project uses its own `depth` field, you can now rely on mongoid-tree to handle this.
 
 ## Usage
 
-Read the API documentation at http://benedikt.github.com/mongoid-tree and take a look at the `Mongoid::Tree` module
+Read the API documentation at https://github.com/secondimpression/nobrainer-tree and take a look at the `NoBrainer::Tree` module
 
 ```ruby
 class Node
-  include Mongoid::Document
-  include Mongoid::Tree
+  include NoBrainer::Document
+  include NoBrainer::Tree
 end
 ```
+
 
 ### Utility methods
 
@@ -71,12 +66,12 @@ node.descendant_of?(other)
 node.sibling_of?(other)
 ```
 
-See `Mongoid::Tree` for more information on these methods.
+See `NoBrainer::Tree` for more information on these methods.
 
 
 ### Ordering
 
-`Mongoid::Tree` doesn't order children by default. To enable ordering of tree nodes include the `Mongoid::Tree::Ordering` module. This will add a `position` field to your document and provide additional utility methods:
+`NoBrainer::Tree` doesn't order children by default. To enable ordering of tree nodes include the `NoBrainer::Tree::Ordering` module. This will add a `position` field to your document and provide additional utility methods:
 
 ```ruby
 node.lower_siblings
@@ -99,25 +94,26 @@ Example:
 
 ```ruby
 class Node
-  include Mongoid::Document
-  include Mongoid::Tree
-  include Mongoid::Tree::Ordering
+  include NoBrainer::Document
+  include NoBrainer::Tree
+  include NoBrainer::Tree::Ordering
 end
 ```
 
-See `Mongoid::Tree::Ordering` for more information on these methods.
+See `NoBrainer::Tree::Ordering` for more information on these methods.
+
 
 ### Traversal
 
-It's possible to traverse the tree using different traversal methods using the `Mongoid::Tree::Traversal` module.
+It's possible to traverse the tree using different traversal methods using the `NoBrainer::Tree::Traversal` module.
 
 Example:
 
 ```ruby
 class Node
-  include Mongoid::Document
-  include Mongoid::Tree
-  include Mongoid::Tree::Traversal
+  include NoBrainer::Document
+  include NoBrainer::Tree
+  include NoBrainer::Tree::Traversal
 end
 
 node.traverse(:breadth_first) do |n|
@@ -125,9 +121,10 @@ node.traverse(:breadth_first) do |n|
 end
 ```
 
+
 ### Destroying
 
-`Mongoid::Tree` does not handle destroying of nodes by default. However it provides several strategies that help you to deal with children of deleted documents. You can simply add them as `before_destroy` callbacks.
+`NoBrainer::Tree` does not handle destroying of nodes by default. However it provides several strategies that help you to deal with children of deleted documents. You can simply add them as `before_destroy` callbacks.
 
 Available strategies are:
 
@@ -140,8 +137,8 @@ Example:
 
 ```ruby
 class Node
-  include Mongoid::Document
-  include Mongoid::Tree
+  include NoBrainer::Document
+  include NoBrainer::Tree
 
   before_destroy :nullify_children
 end
@@ -150,14 +147,14 @@ end
 
 ### Callbacks
 
-There are two callbacks that are called before and after the rearranging process. This enables you to do additional computations after the documents position in the tree is updated. See `Mongoid::Tree` for details.
+There are two callbacks that are called before and after the rearranging process. This enables you to do additional computations after the documents position in the tree is updated. See `NoBrainer::Tree` for details.
 
 Example:
-  
-```ruby 
+
+```ruby
 class Page
-  include Mongoid::Document
-  include Mongoid::Tree
+  include NoBrainer::Document
+  include NoBrainer::Tree
 
   after_rearrange :rebuild_path
 
@@ -172,47 +169,51 @@ class Page
 end
 ```
 
+
 ### Validations
 
-`Mongoid::Tree` currently does not validate the document's children or parent associations by default. To explicitly enable validation for children and parent documents it's required to add a `validates_associated` validation.
+`NoBrainer::Tree` currently does not validate the document's children or parent associations by default. To explicitly enable validation for children and parent documents it's required to add a `validates_associated` validation.
 
 Example:
 
 ```ruby
 class Node
-  include Mongoid::Document
-  include Mongoid::Tree
+  include NoBrainer::Document
+  include NoBrainer::Tree
 
   validates_associated :parent, :children
 end
 ```
 
+
 ## Build Status
 
-mongoid-tree is on [Travis CI](http://travis-ci.org/benedikt/mongoid-tree) running the specs on Ruby Head, Ruby 1.9.3, JRuby (1.9 mode), and Rubinius (1.9 mode).
+nobrainer-tree is on [Travis CI](http://travis-ci.org/secondimpression/nobrainer-tree) running the specs on Ruby Head, Ruby 1.9.3, Ruby 2.0 and Ruby 2.1
+
 
 ## Known issues
 
-See [https://github.com/benedikt/mongoid-tree/issues](https://github.com/benedikt/mongoid-tree/issues)
+See [https://github.com/secondimpression/nobrainer-tree/issues](https://github.com/secondimpression/nobrainer-tree/issues)
 
 
 ## Repository
 
-See [https://github.com/benedikt/mongoid-tree](https://github.com/benedikt/mongoid-tree) and feel free to fork it!
+See [https://github.com/secondimpression/nobrainer-tree](https://github.com/secondimpression/nobrainer-tree) and feel free to fork it!
 
 
 ## Contributors
 
-See a list of all contributors at [https://github.com/benedikt/mongoid-tree/contributors](https://github.com/benedikt/mongoid-tree/contributors). Thanks a lot everyone!
+See a list of all contributors at [https://github.com/secondimpression/nobrainer-tree/contributors](https://github.com/secondimpression/nobrainer-tree/contributors). Thanks a lot everyone!
 
 
 ## Support
 
-If you like mongoid-tree and want to support the development, I would appreciate a small donation:
+If you like nobrainer-tree and want to support the development, the original author would appreciate a small donation:
 
 [![Pledgie](http://www.pledgie.com/campaigns/12137.png?skin_name=chrome)](http://www.pledgie.com/campaigns/12137)
 
 [![Flattr](https://api.flattr.com/button/flattr-badge-large.png)](https://flattr.com/submit/auto?user_id=benediktdeicke&url=https://github.com/benedikt/mongoid-tree&title=mongoid-tree&language=&tags=github&category=software)
+
 
 ## Copyright
 
