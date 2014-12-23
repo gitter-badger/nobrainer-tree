@@ -203,7 +203,7 @@ See [https://github.com/secondimpression/nobrainer-tree](https://github.com/seco
 
 ## Contributors
 
-See a list of all contributors at [https://github.com/secondimpression/nobrainer-tree/contributors](https://github.com/secondimpression/nobrainer-tree/contributors). Thanks a lot everyone!
+See a list of all contributors at [https://github.com/benedikt/mongoid-tree/contributors](https://github.com/benedikt/mongoid-tree/contributors) and [https://github.com/secondimpression/nobrainer-tree/contributors](https://github.com/secondimpression/nobrainer-tree/contributors). Thanks a lot everyone!
 
 
 ## Support
