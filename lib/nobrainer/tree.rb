@@ -86,8 +86,6 @@ module NoBrainer
 
     included do
       has_many :children, :class_name => self.name, :foreign_key => :parent_id
-
-      # TODO: Use index when nil is allowed in index queries
       belongs_to :parent, :class_name => self.name
 
       field :parent_ids, :type => Array, :default => []
