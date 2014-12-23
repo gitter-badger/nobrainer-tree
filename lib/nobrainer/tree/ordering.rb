@@ -35,7 +35,7 @@ module NoBrainer
       included do
         field :position, :type => Integer
 
-        default_scope -> { order_by(:position => :asc) }
+        default_scope -> { order_by(:depth => :asc, :position => :asc) }
 
         before_save :assign_default_position,    :if => :assign_default_position?
         before_save :reposition_former_siblings, :if => :sibling_reposition_required?
