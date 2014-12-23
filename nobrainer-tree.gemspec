@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name          = 'nobrainer-tree'
-  s.version       = '0.0.1'
+  s.version       = '0.0.2'
   s.platform      = Gem::Platform::RUBY
   s.authors       = ['Steven Eksteen']
   s.email         = ['steven@secondimpression.net']
