@@ -17,3 +17,6 @@ before_install:
 matrix:
   allow_failures:
     - rvm: ruby-head
+notifications:
+  slack:
+    secure: "OAzKYeahS6SoPn1E1OsQFNN8O2sA4/VYbiEapfr/DUNv/kq425ns/J1lBv70mjaRNgoU0rqYNyJ4H5Fo2PAes6mJPjnc1qAXNyWTKHBtSYiVI5kYhE8/3FQbizFx1w/+EZfHu2j3bbeDDBEchJHfYr9wwHf8HlCWIciiZPGS6Ts="
