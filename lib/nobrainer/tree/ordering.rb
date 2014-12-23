@@ -44,7 +44,6 @@ module NoBrainer
 
       def inc(increments)
         update(increments.symbolize_keys.map{ |field, value| { field => (self[field] || 0) + value } }.first)
-        self
       end
 
       ##
@@ -52,7 +51,7 @@ module NoBrainer
       #
       # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve the document's ancestors
       def ancestors
-        base_class.unscoped.without_index.where(:id.in => self.parent_ids).order_by(:depth => :asc)
+        base_class.without_index.unscoped.where(:id.in => self.parent_ids).order_by(:depth => :asc)
       end
 
       ##
