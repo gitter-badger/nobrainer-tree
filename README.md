@@ -1,4 +1,4 @@
-# nobrainer-tree [![Build Status](https://travis-ci.org/secondimpression/nobrainer-tree.svg?branch=nobrainer) [![Dependency Status](https://gemnasium.com/secondimpression/nobrainer-tree.png)](https://gemnasium.com/secondimpression/nobrainer-tree)
+# nobrainer-tree ![Build Status](https://travis-ci.org/secondimpression/nobrainer-tree.svg?branch=nobrainer) [![Dependency Status](https://gemnasium.com/secondimpression/nobrainer-tree.png)](https://gemnasium.com/secondimpression/nobrainer-tree)
 
 A tree structure for NoBrainer documents using the materialized path pattern
 
