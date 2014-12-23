@@ -42,6 +42,11 @@ module NoBrainer
         after_destroy :move_lower_siblings_up
       end
 
+      def inc(increments)
+        update(increments.symbolize_keys.map{ |field, value| { field => (self[field] || 0) + value } }.first)
+        self
+      end
+
       ##
       # Returns a chainable criteria for this document's ancestors
       #
@@ -157,11 +162,11 @@ module NoBrainer
 
         if position > other.position
           new_position = other.position
-          self.siblings_between(other).increment_all(:position => 1)
-          other.increment(:position => 1)
+          self.siblings_between(other).each{ |object| object.inc(:position => 1) }
+          other.inc(:position => 1)
         else
           new_position = other.position - 1
-          self.siblings_between(other).increment_all(:position => -1)
+          self.siblings_between(other).each{ |object| object.inc(:position => -1) }
         end
 
         self.position = new_position
@@ -181,33 +186,22 @@ module NoBrainer
 
         if position > other.position
           new_position = other.position + 1
-          self.siblings_between(other).increment_all(:position => 1)
+          self.siblings_between(other).each{ |object| object.inc(:position => 1) }
         else
           new_position = other.position
-          self.siblings_between(other).increment_all(:position => -1)
-          other.increment(:position => -1)
+          self.siblings_between(other).each{ |object| object.inc(:position => -1) }
+          other.inc(:position => -1)
         end
 
         self.position = new_position
         save
       end
 
-      def increment(increments)
-        self.queue_atomic do
-          increments.symbolize_keys.each{ |key, value | self[key] += value }
-        end
-      end
-
-      def increment!(increments)
-        self.increment(increments)
-        self.save
-      end
-
       private
 
       def switch_with_sibling_at_offset(offset)
-        siblings.where(:position => self.position + offset).first.increment(:position => -offset)
-        increment(:position => offset)
+        siblings.where(:position => self.position + offset).first.inc(:position => -offset)
+        inc(:position => offset)
       end
 
       def ensure_to_be_sibling_of(other)
@@ -217,14 +211,14 @@ module NoBrainer
       end
 
       def move_lower_siblings_up
-        lower_siblings.increment_all(:position => -1)
+        lower_siblings.each{ |object| object.inc(:position => -1) }
       end
 
       def reposition_former_siblings
         former_siblings = base_class.where(:parent_id => self.parent_id_was).
                                      where(:position.gt => (self.position_was || 0)).
                                      where(:id.ne => self.id)
-        former_siblings.increment_all(:position => -1)
+        former_siblings.to_a.each{ |object| object.inc(:position => -1) }
       end
 
       def sibling_reposition_required?
