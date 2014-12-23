@@ -130,7 +130,7 @@ module NoBrainer
       #
       # @return [NoBrainer::Criteria] NoBrainer criteria to retrieve all root documents
       def roots
-        where(:parent_id => nil)
+        where(:or => [:parent_id.defined => false, :parent_id => nil])
       end
 
       ##
