@@ -2,8 +2,8 @@ Gem::Specification.new do |s|
   s.name          = 'nobrainer-tree'
   s.version       = '0.0.2'
   s.platform      = Gem::Platform::RUBY
-  s.authors       = ['Steven Eksteen']
-  s.email         = ['steven@secondimpression.net']
+  s.authors       = ['Benedikt Deicke', 'Steven Eksteen']
+  s.email         = ['benedikt@synatic.net','steven@secondimpression.net']
   s.homepage      = 'https://github.com/secondimpression/nobrainer-tree'
   s.summary       = 'A tree structure for NoBrainer documents'
   s.description   = 'A tree structure for NoBrainer documents using the materialized path pattern'
