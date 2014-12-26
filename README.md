@@ -1,5 +1,7 @@
 # nobrainer-tree ![Build Status](https://travis-ci.org/secondimpression/nobrainer-tree.svg?branch=nobrainer) [![Dependency Status](https://gemnasium.com/secondimpression/nobrainer-tree.png)](https://gemnasium.com/secondimpression/nobrainer-tree)
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/secondimpression/nobrainer-tree?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A tree structure for NoBrainer documents using the materialized path pattern
 
 ## Requirements
